@@ -11,7 +11,7 @@ import {
   TestExecutionResults,
 } from './types';
 
-const API_BASE_URL = process.env.QUALITYMAX_API_URL || 'https://app.qualitymax.ai/api';
+const API_BASE_URL = process.env.QUALITYMAX_API_URL || 'https://app.qamax.co/api';
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 
 export class QualityMaxClient {

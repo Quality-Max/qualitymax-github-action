@@ -149,7 +149,7 @@ jobs:
 
 ## Getting Your API Key
 
-1. Go to [app.qualitymax.ai](https://app.qualitymax.ai)
+1. Go to [app.qamax.co](https://app.qamax.co)
 2. Navigate to **Settings** → **API Keys**
 3. Click **Generate API Key**
 4. Copy the key (starts with `qm_`)
@@ -157,7 +157,7 @@ jobs:
 
 ## Getting Your Project ID
 
-1. Go to [app.qualitymax.ai](https://app.qualitymax.ai)
+1. Go to [app.qamax.co](https://app.qamax.co)
 2. Open your project
 3. Copy the project ID from the URL or project settings
 
@@ -178,7 +178,7 @@ When tests complete, a comment is automatically posted to your PR:
 - **Base URL:** https://staging.example.com
 - **Commit:** `abc1234`
 
-[View Full Report](https://app.qualitymax.ai/results/gha_xyz789)
+[View Full Report](https://app.qamax.co/results/gha_xyz789)
 
 ---
 

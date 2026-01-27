@@ -19,7 +19,7 @@
     "automation",
     "qualitymax"
   ],
-  "author": "QualityMax <contact@qualitymax.ai>",
+  "author": "QualityMax <contact@qamax.co>",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.1",
@@ -45,5 +45,5 @@
   "bugs": {
     "url": "https://github.com/Quality-Max/qualitymax-github-action/issues"
   },
-  "homepage": "https://qualitymax.ai"
+  "homepage": "https://qamax.co"
 }

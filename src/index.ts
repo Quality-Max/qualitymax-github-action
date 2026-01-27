@@ -203,7 +203,7 @@ async function run(): Promise<void> {
     const isValid = await client.validateApiKey();
     if (!isValid) {
       throw new Error(
-        'Invalid API key. Get your API key from app.qualitymax.ai/settings/api'
+        'Invalid API key. Get your API key from app.qamax.co/settings/api'
       );
     }
     core.info('API key validated ✓');
