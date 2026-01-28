@@ -19,7 +19,7 @@ jobs:
       - name: Run QualityMax Tests
         uses: Quality-Max/qualitymax-github-action@v1
         with:
-          api-key: ${{ secrets.QUALITYMAX_API_KEY }}
+          api-key: ${{ secrets.QAMAX_API_KEY }}
           project-id: 'your-project-id'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: Quality-Max/qualitymax-github-action@v1
         with:
-          api-key: ${{ secrets.QUALITYMAX_API_KEY }}
+          api-key: ${{ secrets.QAMAX_API_KEY }}
           project-id: 'proj_abc123'
           test-suite: 'smoke'
         env:
@@ -97,7 +97,7 @@ jobs:
     steps:
       - uses: Quality-Max/qualitymax-github-action@v1
         with:
-          api-key: ${{ secrets.QUALITYMAX_API_KEY }}
+          api-key: ${{ secrets.QAMAX_API_KEY }}
           project-id: 'proj_abc123'
           test-suite: 'regression'
           timeout-minutes: '60'
@@ -119,7 +119,7 @@ jobs:
     steps:
       - uses: Quality-Max/qualitymax-github-action@v1
         with:
-          api-key: ${{ secrets.QUALITYMAX_API_KEY }}
+          api-key: ${{ secrets.QAMAX_API_KEY }}
           project-id: 'proj_abc123'
           base-url: ${{ github.event.deployment_status.target_url }}
         env:
@@ -131,7 +131,7 @@ jobs:
 ```yaml
 - uses: Quality-Max/qualitymax-github-action@v1
   with:
-    api-key: ${{ secrets.QUALITYMAX_API_KEY }}
+    api-key: ${{ secrets.QAMAX_API_KEY }}
     project-id: 'proj_abc123'
     test-suite: 'custom'
     test-ids: '1,2,3,4,5'
@@ -142,7 +142,7 @@ jobs:
 ```yaml
 - uses: Quality-Max/qualitymax-github-action@v1
   with:
-    api-key: ${{ secrets.QUALITYMAX_API_KEY }}
+    api-key: ${{ secrets.QAMAX_API_KEY }}
     project-id: 'proj_abc123'
     fail-on-test-failure: 'false'
 ```
@@ -153,7 +153,7 @@ jobs:
 2. Navigate to **Settings** → **API Keys**
 3. Click **Generate API Key**
 4. Copy the key (starts with `qm_`)
-5. Add it as a secret in your repository: **Settings** → **Secrets** → **QUALITYMAX_API_KEY**
+5. Add it as a secret in your repository: **Settings** → **Secrets** → **QAMAX_API_KEY**
 
 ## Getting Your Project ID
 
