@@ -60,7 +60,7 @@ jobs:
       - name: Check if secrets are available
         id: check-secrets
         run: |
-          if [ -n "${{ secrets.QAMAX_API_KEY }}" ] && [ -n "${{ secrets.QUALITYMAX_TEST_PROJECT_ID }}" ]; then
+          if [ -n "${{ secrets.QUALITYMAX_API_KEY }}" ] && [ -n "${{ secrets.QUALITYMAX_TEST_PROJECT_ID }}" ]; then
             echo "available=true" >> $GITHUB_OUTPUT
           else
             echo "available=false" >> $GITHUB_OUTPUT
@@ -71,7 +71,7 @@ jobs:
         if: steps.check-secrets.outputs.available == 'true'
         uses: ./
         with:
-          api-key: ${{ secrets.QAMAX_API_KEY }}
+          api-key: ${{ secrets.QUALITYMAX_API_KEY }}
           project-id: ${{ secrets.QUALITYMAX_TEST_PROJECT_ID }}
           test-suite: 'smoke'
           timeout-minutes: '10'

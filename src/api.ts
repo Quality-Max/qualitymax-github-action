@@ -24,7 +24,7 @@ export class QualityMaxClient {
       headers: {
         'X-API-Key': apiKey,
         'Content-Type': 'application/json',
-        'User-Agent': 'QualityMax-GitHub-Action/1.0',
+        'User-Agent': 'QualityMax-GitHub-Action/1.1',
       },
     });
   }
@@ -41,6 +41,50 @@ export class QualityMaxClient {
     } catch (error) {
       core.debug(`API key validation failed: ${error}`);
       return false;
+    }
+  }
+
+  /**
+   * Get all projects accessible with this API key
+   */
+  async getProjects(): Promise<{ id: string; name: string }[]> {
+    const response = await this.client.get(`${API_BASE_URL}/github-action/projects`);
+    const body = await response.readBody();
+    const statusCode = response.message.statusCode || 0;
+
+    if (statusCode >= 400) {
+      throw new Error(`Failed to list projects: ${body}`);
+    }
+
+    const data = JSON.parse(body);
+    return data.projects || [];
+  }
+
+  /**
+   * Resolve project ID from GitHub repository name
+   */
+  async resolveProject(repository: string): Promise<string | null> {
+    try {
+      const response = await this.client.get(
+        `${API_BASE_URL}/github-action/resolve-project?repository=${encodeURIComponent(repository)}`
+      );
+      const body = await response.readBody();
+      const statusCode = response.message.statusCode || 0;
+
+      if (statusCode === 404) {
+        return null;
+      }
+
+      if (statusCode >= 400) {
+        core.debug(`Failed to resolve project: ${body}`);
+        return null;
+      }
+
+      const data = JSON.parse(body);
+      return data.found ? data.project_id : null;
+    } catch (error) {
+      core.debug(`Project resolution failed: ${error}`);
+      return null;
     }
   }
 

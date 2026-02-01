@@ -23,7 +23,8 @@ function getInputs(): ActionInputs {
 
   return {
     apiKey: core.getInput('api-key', { required: true }),
-    projectId: core.getInput('project-id', { required: true }),
+    projectId: core.getInput('project-id') || '',
+    projectName: core.getInput('project-name') || '',
     testSuite: core.getInput('test-suite') || 'all',
     testIds: testIdsInput
       ? testIdsInput.split(',').map((id) => parseInt(id.trim(), 10))
@@ -191,7 +192,7 @@ async function run(): Promise<void> {
     const inputs = getInputs();
 
     core.info('🚀 QualityMax Test Runner');
-    core.info(`Project: ${inputs.projectId}`);
+    core.info(`Project: ${inputs.projectId || inputs.projectName || '(auto-detect)'}`);
     core.info(`Test Suite: ${inputs.testSuite}`);
     core.info(`Browser: ${inputs.browser}`);
 
@@ -208,16 +209,49 @@ async function run(): Promise<void> {
     }
     core.info('API key validated ✓');
 
+    // Resolve project ID
+    const ghContext = getGitHubContext();
+    let resolvedProjectId = inputs.projectId;
+
+    if (resolvedProjectId) {
+      core.info(`Using provided project ID: ${resolvedProjectId}`);
+    } else if (inputs.projectName) {
+      core.info(`Resolving project by name: "${inputs.projectName}"...`);
+      const projects = await client.getProjects();
+      const match = projects.find(
+        (p) => p.name.toLowerCase() === inputs.projectName.toLowerCase()
+      );
+      if (!match) {
+        const available = projects.map((p) => p.name).join(', ');
+        throw new Error(
+          `Project "${inputs.projectName}" not found. Available projects: ${available || 'none'}`
+        );
+      }
+      resolvedProjectId = match.id;
+      core.info(`Resolved project "${inputs.projectName}" → ${resolvedProjectId}`);
+    } else {
+      core.info(`Auto-detecting project from repository: ${ghContext.repository}...`);
+      const detected = await client.resolveProject(ghContext.repository);
+      if (!detected) {
+        throw new Error(
+          'Could not auto-detect project. Provide project-id or project-name input, ' +
+            'or link your repository in QualityMax project settings.'
+        );
+      }
+      resolvedProjectId = detected;
+      core.info(`Auto-detected project: ${resolvedProjectId}`);
+    }
+
     // Build request
     const request: TriggerTestsRequest = {
-      project_id: inputs.projectId,
+      project_id: resolvedProjectId,
       test_suite: inputs.testSuite,
       test_ids: inputs.testIds,
       base_url: inputs.baseUrl,
       browser: inputs.browser,
       headless: inputs.headless,
       timeout_minutes: inputs.timeoutMinutes,
-      github_context: getGitHubContext(),
+      github_context: ghContext,
     };
 
     // Trigger tests

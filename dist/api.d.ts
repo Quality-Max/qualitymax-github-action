@@ -11,6 +11,17 @@ export declare class QualityMaxClient {
      */
     validateApiKey(): Promise<boolean>;
     /**
+     * Get all projects accessible with this API key
+     */
+    getProjects(): Promise<{
+        id: string;
+        name: string;
+    }[]>;
+    /**
+     * Resolve project ID from GitHub repository name
+     */
+    resolveProject(repository: string): Promise<string | null>;
+    /**
      * Trigger test execution
      */
     triggerTests(request: TriggerTestsRequest): Promise<TriggerTestsResponse>;

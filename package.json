@@ -1,6 +1,6 @@
 {
   "name": "qualitymax-github-action",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Run AI-powered E2E tests in your CI/CD pipeline with QualityMax",
   "main": "dist/index.js",
   "scripts": {

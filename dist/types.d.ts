@@ -76,6 +76,7 @@ export interface TestExecutionResults {
 export interface ActionInputs {
     apiKey: string;
     projectId: string;
+    projectName: string;
     testSuite: string;
     testIds?: number[];
     baseUrl?: string;

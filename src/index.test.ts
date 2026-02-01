@@ -79,6 +79,7 @@ describe('Types', () => {
       const inputs: ActionInputs = {
         apiKey: 'qm_testapikey123',
         projectId: 'proj_abc123',
+        projectName: '',
         testSuite: 'all',
         browser: 'chromium',
         headless: true,
@@ -90,6 +91,40 @@ describe('Types', () => {
       expect(inputs.apiKey).toMatch(/^qm_/);
       expect(inputs.projectId).toBe('proj_abc123');
       expect(inputs.failOnTestFailure).toBe(true);
+    });
+
+    it('should support project-name as alternative to project-id', () => {
+      const inputs: ActionInputs = {
+        apiKey: 'qm_testapikey123',
+        projectId: '',
+        projectName: 'My E2E Tests',
+        testSuite: 'all',
+        browser: 'chromium',
+        headless: true,
+        timeoutMinutes: 30,
+        failOnTestFailure: true,
+        postPrComment: true,
+      };
+
+      expect(inputs.projectId).toBe('');
+      expect(inputs.projectName).toBe('My E2E Tests');
+    });
+
+    it('should support auto-detection with both empty', () => {
+      const inputs: ActionInputs = {
+        apiKey: 'qm_testapikey123',
+        projectId: '',
+        projectName: '',
+        testSuite: 'all',
+        browser: 'chromium',
+        headless: true,
+        timeoutMinutes: 30,
+        failOnTestFailure: true,
+        postPrComment: true,
+      };
+
+      expect(inputs.projectId).toBe('');
+      expect(inputs.projectName).toBe('');
     });
   });
 });

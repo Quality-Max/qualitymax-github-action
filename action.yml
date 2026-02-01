@@ -11,8 +11,11 @@ inputs:
     description: 'QualityMax API key (get it from app.qamax.co/settings/api)'
     required: true
   project-id:
-    description: 'QualityMax project ID'
-    required: true
+    description: 'QualityMax project ID (optional if project-name provided or repo auto-detected)'
+    required: false
+  project-name:
+    description: 'QualityMax project name (alternative to project-id)'
+    required: false
   test-suite:
     description: 'Test suite to run: all, smoke, regression, or custom'
     required: false
