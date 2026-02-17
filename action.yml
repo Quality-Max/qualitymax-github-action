@@ -46,6 +46,21 @@ inputs:
     description: 'Post test results as a PR comment'
     required: false
     default: 'true'
+  mode:
+    description: 'Action mode: run (default) or seed (bootstrap tests via AI discovery)'
+    required: false
+    default: 'run'
+  auto-discover:
+    description: 'Auto-discover test scenarios in seed mode'
+    required: false
+    default: 'true'
+  max-seed-tests:
+    description: 'Maximum number of tests to generate in seed mode (1-10)'
+    required: false
+    default: '3'
+  seed-descriptions:
+    description: 'Newline-separated test descriptions for seed mode (overrides auto-discover)'
+    required: false
 
 outputs:
   execution-id:
@@ -64,6 +79,12 @@ outputs:
     description: 'URL to the full test report'
   summary-markdown:
     description: 'Pre-formatted markdown summary for PR comments'
+  tests-created:
+    description: 'Number of tests created in seed mode'
+  tests-skipped:
+    description: 'Number of tests skipped in seed mode (already existed)'
+  seed-message:
+    description: 'Summary message from seed operation'
 
 runs:
   using: 'node20'

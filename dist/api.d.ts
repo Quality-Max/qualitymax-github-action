@@ -1,7 +1,7 @@
 /**
  * QualityMax API Client
  */
-import { TriggerTestsRequest, TriggerTestsResponse, TestExecutionStatus, TestExecutionResults } from './types';
+import { TriggerTestsRequest, TriggerTestsResponse, TestExecutionStatus, TestExecutionResults, SeedTestsRequest, SeedTestsResponse } from './types';
 export declare class QualityMaxClient {
     private client;
     private apiKey;
@@ -41,5 +41,9 @@ export declare class QualityMaxClient {
      * Poll for execution completion
      */
     waitForCompletion(executionId: string, timeoutMs: number): Promise<TestExecutionResults>;
+    /**
+     * Seed tests for a project using AI discovery + generation
+     */
+    seedTests(request: SeedTestsRequest): Promise<SeedTestsResponse>;
     private sleep;
 }

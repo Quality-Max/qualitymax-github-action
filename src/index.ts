@@ -7,12 +7,19 @@
 
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import { exec } from '@actions/exec';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import { QualityMaxClient } from './api';
 import {
   ActionInputs,
   GitHubContext,
   TriggerTestsRequest,
+  TriggerTestsResponse,
   TestExecutionResults,
+  EmbeddedScript,
+  SeedTestsResponse,
 } from './types';
 
 /**
@@ -20,6 +27,7 @@ import {
  */
 function getInputs(): ActionInputs {
   const testIdsInput = core.getInput('test-ids');
+  const seedDescInput = core.getInput('seed-descriptions');
 
   return {
     apiKey: core.getInput('api-key', { required: true }),
@@ -35,6 +43,12 @@ function getInputs(): ActionInputs {
     timeoutMinutes: parseInt(core.getInput('timeout-minutes') || '30', 10),
     failOnTestFailure: core.getInput('fail-on-test-failure') !== 'false',
     postPrComment: core.getInput('post-pr-comment') !== 'false',
+    mode: (core.getInput('mode') || 'run') as 'run' | 'seed',
+    autoDiscover: core.getInput('auto-discover') !== 'false',
+    maxSeedTests: parseInt(core.getInput('max-seed-tests') || '3', 10),
+    seedDescriptions: seedDescInput
+      ? seedDescInput.split('\n').map((d) => d.trim()).filter((d) => d)
+      : undefined,
   };
 }
 
@@ -156,6 +170,179 @@ function generateFallbackMarkdown(results: TestExecutionResults): string {
 }
 
 /**
+ * Run tests locally in the GitHub Action runner
+ */
+async function runTestsLocally(
+  triggerResponse: TriggerTestsResponse,
+  client: QualityMaxClient,
+  inputs: ActionInputs,
+): Promise<TestExecutionResults> {
+  const scripts = triggerResponse.scripts || [];
+  const executionId = triggerResponse.execution_id;
+
+  core.info(`Running ${scripts.length} test(s) locally in GitHub Action runner...`);
+
+  // Create temp directory for test files
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qamax-'));
+  const testDir = path.join(tmpDir, 'tests');
+  fs.mkdirSync(testDir, { recursive: true });
+
+  // Write playwright config
+  const configContent = `
+const { defineConfig } = require('@playwright/test');
+module.exports = defineConfig({
+  testDir: './tests',
+  timeout: 60000,
+  retries: 0,
+  reporter: [['json', { outputFile: 'results.json' }], ['list']],
+  use: {
+    headless: true,
+    viewport: { width: 1280, height: 720 },
+    screenshot: 'only-on-failure',
+  },
+  projects: [{ name: '${inputs.browser}', use: { browserName: '${inputs.browser === 'chromium' ? 'chromium' : inputs.browser === 'firefox' ? 'firefox' : 'webkit'}' } }],
+});
+`;
+  fs.writeFileSync(path.join(tmpDir, 'playwright.config.js'), configContent);
+
+  // Write each test script to a file
+  const scriptMap = new Map<string, EmbeddedScript>();
+  for (const script of scripts) {
+    const safeFileName = `test-${script.id}.spec.js`;
+    const filePath = path.join(testDir, safeFileName);
+
+    // Strip TypeScript type annotations for .js execution
+    let code = script.code;
+    // Remove import type statements
+    code = code.replace(/import\s+type\s+\{[^}]*\}\s+from\s+['"][^'"]*['"];?\s*/g, '');
+    // Remove type annotations from parameters: (page: Page) -> (page)
+    code = code.replace(/(\w+)\s*:\s*(?:Page|BrowserContext|Browser|Locator|FrameLocator|APIRequestContext)\b/g, '$1');
+
+    fs.writeFileSync(filePath, code);
+    scriptMap.set(safeFileName, script);
+    core.info(`  Wrote ${safeFileName}: ${script.name}`);
+  }
+
+  // Install Playwright
+  core.info('Installing Playwright...');
+  const packageJson = JSON.stringify({
+    dependencies: {
+      '@playwright/test': 'latest',
+    },
+  });
+  fs.writeFileSync(path.join(tmpDir, 'package.json'), packageJson);
+
+  await exec('npm', ['install', '--no-audit', '--no-fund'], { cwd: tmpDir, silent: true });
+  await exec('npx', ['playwright', 'install', '--with-deps', inputs.browser], { cwd: tmpDir, silent: true });
+
+  // Run tests
+  core.info('Running Playwright tests...');
+  const startTime = Date.now();
+  let exitCode = 0;
+  try {
+    exitCode = await exec('npx', ['playwright', 'test', '--config=playwright.config.js'], {
+      cwd: tmpDir,
+      ignoreReturnCode: true,
+    });
+  } catch (error) {
+    core.warning(`Playwright execution error: ${error}`);
+    exitCode = 1;
+  }
+
+  const durationSeconds = (Date.now() - startTime) / 1000;
+
+  // Parse results from JSON reporter
+  let passedTests = 0;
+  let failedTests = 0;
+  let totalTests = scripts.length;
+  let skippedTests = 0;
+  const testResults: TestExecutionResults['tests'] = [];
+
+  const resultsFile = path.join(tmpDir, 'results.json');
+  if (fs.existsSync(resultsFile)) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(resultsFile, 'utf-8'));
+      const suites = raw.suites || [];
+
+      for (const suite of suites) {
+        for (const spec of suite.specs || []) {
+          const fileName = path.basename(suite.file || '');
+          const script = scriptMap.get(fileName);
+          const testStatus = spec.ok ? 'passed' : 'failed';
+          const testDuration = (spec.tests?.[0]?.results?.[0]?.duration || 0) / 1000;
+          const errorMsg = spec.tests?.[0]?.results?.[0]?.error?.message;
+
+          if (testStatus === 'passed') passedTests++;
+          else failedTests++;
+
+          testResults.push({
+            test_id: script?.id || 0,
+            test_name: script?.name || spec.title || fileName,
+            status: testStatus as 'passed' | 'failed',
+            duration_seconds: testDuration,
+            error_message: errorMsg,
+          });
+        }
+      }
+    } catch (error) {
+      core.warning(`Failed to parse Playwright results: ${error}`);
+    }
+  }
+
+  // If no results parsed, infer from exit code
+  if (testResults.length === 0) {
+    if (exitCode === 0) {
+      passedTests = totalTests;
+    } else {
+      failedTests = totalTests;
+    }
+    for (const script of scripts) {
+      testResults.push({
+        test_id: script.id,
+        test_name: script.name,
+        status: exitCode === 0 ? 'passed' : 'failed',
+        duration_seconds: durationSeconds / scripts.length,
+        error_message: exitCode !== 0 ? 'Test execution failed' : undefined,
+      });
+    }
+  }
+
+  skippedTests = totalTests - passedTests - failedTests;
+  if (skippedTests < 0) skippedTests = 0;
+
+  const overallResult = passedTests > 0 && failedTests === 0 ? 'passed' : 'failed';
+  const overallStatus = overallResult === 'passed' ? 'completed' : 'failed';
+
+  // Clean up temp directory
+  try {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  } catch {
+    // Ignore cleanup errors
+  }
+
+  // Report results back to API
+  await client.reportResults(executionId, overallResult as 'passed' | 'failed', passedTests, failedTests, totalTests);
+
+  const results: TestExecutionResults = {
+    execution_id: executionId,
+    status: overallStatus as TestExecutionResults['status'],
+    result: overallResult as TestExecutionResults['result'],
+    total_tests: totalTests,
+    passed_tests: passedTests,
+    failed_tests: failedTests,
+    skipped_tests: skippedTests,
+    duration_seconds: durationSeconds,
+    started_at: new Date(startTime).toISOString(),
+    completed_at: new Date().toISOString(),
+    browser: inputs.browser,
+    report_url: `https://app.qamax.co/results/${executionId}`,
+    tests: testResults,
+  };
+
+  return results;
+}
+
+/**
  * Write job summary
  */
 async function writeJobSummary(results: TestExecutionResults): Promise<void> {
@@ -257,6 +444,37 @@ async function run(): Promise<void> {
       core.info(`Auto-detected project: ${resolvedProjectId}`);
     }
 
+    // Handle seed mode
+    if (inputs.mode === 'seed') {
+      core.info('Running in seed mode — generating test cases...');
+      const seedResponse = await client.seedTests({
+        project_id: resolvedProjectId,
+        base_url: inputs.baseUrl,
+        descriptions: inputs.seedDescriptions,
+        auto_discover: inputs.autoDiscover,
+        max_tests: inputs.maxSeedTests,
+      });
+
+      core.setOutput('tests-created', seedResponse.tests_created.toString());
+      core.setOutput('tests-skipped', seedResponse.skipped.toString());
+      core.setOutput('seed-message', seedResponse.message);
+
+      core.info('');
+      core.info('═══════════════════════════════════════');
+      core.info(`  Seeded: ${seedResponse.tests_created} test(s)`);
+      core.info(`  Skipped: ${seedResponse.skipped} existing`);
+      core.info(`  Message: ${seedResponse.message}`);
+      core.info('═══════════════════════════════════════');
+      core.info('');
+
+      if (seedResponse.tests_created === 0 && seedResponse.skipped === 0) {
+        core.setFailed(seedResponse.message);
+      } else {
+        core.info('Seed complete. Tests are ready for execution.');
+      }
+      return;
+    }
+
     // Build request
     const request: TriggerTestsRequest = {
       project_id: resolvedProjectId,
@@ -282,9 +500,46 @@ async function run(): Promise<void> {
       );
     }
 
-    // Wait for completion
-    const timeoutMs = inputs.timeoutMinutes * 60 * 1000;
-    const results = await client.waitForCompletion(executionId, timeoutMs);
+    let results: TestExecutionResults;
+
+    // Check if we should run tests locally
+    if (triggerResponse.run_locally && triggerResponse.scripts && triggerResponse.scripts.length > 0) {
+      core.info(`Running ${triggerResponse.scripts.length} test(s) locally in GitHub Action runner`);
+      results = await runTestsLocally(triggerResponse, client, inputs);
+    } else if (triggerResponse.run_locally && triggerResponse.test_files) {
+      // Repository-based tests — run via npx playwright test
+      core.info(`Running repository tests locally: ${triggerResponse.test_command}`);
+      const startTime = Date.now();
+      let exitCode = 0;
+      try {
+        exitCode = await exec('npx', ['playwright', 'test', ...triggerResponse.test_files], {
+          ignoreReturnCode: true,
+        });
+      } catch {
+        exitCode = 1;
+      }
+      const duration = (Date.now() - startTime) / 1000;
+
+      results = {
+        execution_id: executionId,
+        status: exitCode === 0 ? 'completed' : 'failed',
+        result: exitCode === 0 ? 'passed' : 'failed',
+        total_tests: triggerResponse.test_files.length,
+        passed_tests: exitCode === 0 ? triggerResponse.test_files.length : 0,
+        failed_tests: exitCode !== 0 ? triggerResponse.test_files.length : 0,
+        skipped_tests: 0,
+        duration_seconds: duration,
+        started_at: new Date(startTime).toISOString(),
+        completed_at: new Date().toISOString(),
+        browser: inputs.browser,
+        report_url: `https://app.qamax.co/results/${executionId}`,
+        tests: [],
+      };
+    } else {
+      // Remote execution — poll for completion
+      const timeoutMs = inputs.timeoutMinutes * 60 * 1000;
+      results = await client.waitForCompletion(executionId, timeoutMs);
+    }
 
     // Set outputs
     setOutputs(results);
@@ -306,12 +561,20 @@ async function run(): Promise<void> {
     core.info('═══════════════════════════════════════');
     core.info('');
 
+    // Determine if tests actually passed
+    const executionFailed =
+      results.result === 'failed' ||
+      results.status === 'failed' ||
+      results.status === 'cancelled' ||
+      results.status === 'timeout' ||
+      (results.passed_tests === 0 && results.total_tests > 0);
+
     // Fail if tests failed and failOnTestFailure is enabled
-    if (results.result === 'failed' && inputs.failOnTestFailure) {
+    if (executionFailed && inputs.failOnTestFailure) {
       core.setFailed(
-        `${results.failed_tests} test(s) failed. View report: ${results.report_url}`
+        `${results.failed_tests} of ${results.total_tests} test(s) failed. View report: ${results.report_url}`
       );
-    } else if (results.result === 'passed') {
+    } else if (!executionFailed && results.passed_tests > 0) {
       core.info('✅ All tests passed!');
     }
   } catch (error) {

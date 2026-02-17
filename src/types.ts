@@ -33,6 +33,17 @@ export interface TriggerTestsResponse {
   estimated_duration_seconds?: number;
   status_url: string;
   cancel_url: string;
+  run_locally?: boolean;
+  test_files?: string[];
+  test_command?: string;
+  scripts?: EmbeddedScript[];
+}
+
+export interface EmbeddedScript {
+  id: number;
+  name: string;
+  code: string;
+  test_case_id?: number;
 }
 
 export type TestRunStatus =
@@ -88,6 +99,29 @@ export interface TestExecutionResults {
   summary_markdown?: string;
 }
 
+export interface SeedTestsRequest {
+  project_id: string;
+  base_url?: string;
+  descriptions?: string[];
+  auto_discover: boolean;
+  max_tests: number;
+}
+
+export interface SeedTestResult {
+  test_case_id: number;
+  script_id: number;
+  name: string;
+  tags: string[];
+}
+
+export interface SeedTestsResponse {
+  success: boolean;
+  tests_created: number;
+  tests: SeedTestResult[];
+  message: string;
+  skipped: number;
+}
+
 export interface ActionInputs {
   apiKey: string;
   projectId: string;
@@ -100,6 +134,10 @@ export interface ActionInputs {
   timeoutMinutes: number;
   failOnTestFailure: boolean;
   postPrComment: boolean;
+  mode: 'run' | 'seed';
+  autoDiscover: boolean;
+  maxSeedTests: number;
+  seedDescriptions?: string[];
 }
 
 export interface ActionOutputs {

@@ -9,6 +9,8 @@ import {
   TriggerTestsResponse,
   TestExecutionStatus,
   TestExecutionResults,
+  SeedTestsRequest,
+  SeedTestsResponse,
 } from './types';
 
 const API_BASE_URL = process.env.QUALITYMAX_API_URL || 'https://app.qamax.co/api';
@@ -161,6 +163,39 @@ export class QualityMaxClient {
   }
 
   /**
+   * Report bulk execution results back to the API
+   */
+  async reportResults(
+    executionId: string,
+    result: 'passed' | 'failed',
+    passedTests: number,
+    failedTests: number,
+    totalTests: number,
+  ): Promise<void> {
+    try {
+      const response = await this.client.post(
+        `${API_BASE_URL}/github-action/report/${executionId}`,
+        JSON.stringify({
+          result,
+          passed_tests: passedTests,
+          failed_tests: failedTests,
+          total_tests: totalTests,
+        })
+      );
+
+      const statusCode = response.message.statusCode || 0;
+      if (statusCode >= 400) {
+        const body = await response.readBody();
+        core.warning(`Failed to report results: ${body}`);
+      } else {
+        core.info('Reported results to QualityMax');
+      }
+    } catch (error) {
+      core.warning(`Error reporting results: ${error}`);
+    }
+  }
+
+  /**
    * Cancel execution
    */
   async cancelExecution(executionId: string): Promise<void> {
@@ -229,6 +264,34 @@ export class QualityMaxClient {
     core.warning('Execution timeout reached, attempting to cancel...');
     await this.cancelExecution(executionId);
     throw new Error(`Execution timed out after ${timeoutMs / 1000} seconds`);
+  }
+
+  /**
+   * Seed tests for a project using AI discovery + generation
+   */
+  async seedTests(request: SeedTestsRequest): Promise<SeedTestsResponse> {
+    core.info(`Seeding tests for project ${request.project_id}...`);
+
+    const response = await this.client.post(
+      `${API_BASE_URL}/github-action/seed-tests`,
+      JSON.stringify(request)
+    );
+
+    const body = await response.readBody();
+    const statusCode = response.message.statusCode || 0;
+
+    if (statusCode >= 400) {
+      throw new Error(`Failed to seed tests: ${body}`);
+    }
+
+    const data: SeedTestsResponse = JSON.parse(body);
+
+    if (!data.success) {
+      throw new Error(`Failed to seed tests: ${data.message}`);
+    }
+
+    core.info(`Seeded ${data.tests_created} test(s), skipped ${data.skipped}`);
+    return data;
   }
 
   private sleep(ms: number): Promise<void> {
