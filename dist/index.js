@@ -30366,6 +30366,9 @@ async function runTestsLocally(triggerResponse, client, inputs) {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qamax-'));
     const testDir = path.join(tmpDir, 'tests');
     fs.mkdirSync(testDir, { recursive: true });
+    // Determine base URL from inputs or trigger response
+    const baseUrl = inputs.baseUrl || '';
+    const baseUrlConfig = baseUrl ? `\n    baseURL: '${baseUrl}',` : '';
     // Write playwright config
     const configContent = `
 const { defineConfig } = require('@playwright/test');
@@ -30375,9 +30378,10 @@ module.exports = defineConfig({
   retries: 0,
   reporter: [['json', { outputFile: 'results.json' }], ['list']],
   use: {
-    headless: true,
+    headless: true,${baseUrlConfig}
     viewport: { width: 1280, height: 720 },
     screenshot: 'only-on-failure',
+    actionTimeout: 15000,
   },
   projects: [{ name: '${inputs.browser}', use: { browserName: '${inputs.browser === 'chromium' ? 'chromium' : inputs.browser === 'firefox' ? 'firefox' : 'webkit'}' } }],
 });
