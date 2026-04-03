@@ -30,6 +30,16 @@ export interface TriggerTestsResponse {
     estimated_duration_seconds?: number;
     status_url: string;
     cancel_url: string;
+    run_locally?: boolean;
+    test_files?: string[];
+    test_command?: string;
+    scripts?: EmbeddedScript[];
+}
+export interface EmbeddedScript {
+    id: number;
+    name: string;
+    code: string;
+    test_case_id?: number;
 }
 export type TestRunStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'timeout';
 export type TestResult = 'passed' | 'failed' | 'skipped' | 'error';

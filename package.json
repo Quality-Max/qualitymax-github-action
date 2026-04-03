@@ -1,6 +1,6 @@
 {
   "name": "qualitymax-github-action",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Run AI-powered E2E tests in your CI/CD pipeline with QualityMax",
   "main": "dist/index.js",
   "scripts": {
@@ -19,7 +19,7 @@
     "automation",
     "qualitymax"
   ],
-  "author": "QualityMax <contact@qamax.co>",
+  "author": "QualityMax <contact@qualitymax.io>",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.1",
@@ -45,5 +45,5 @@
   "bugs": {
     "url": "https://github.com/Quality-Max/qualitymax-github-action/issues"
   },
-  "homepage": "https://qamax.co"
+  "homepage": "https://qualitymax.io"
 }
