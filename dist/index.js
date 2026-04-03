@@ -29967,7 +29967,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QualityMaxClient = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 const http_client_1 = __nccwpck_require__(4844);
-const API_BASE_URL = process.env.QUALITYMAX_API_URL || 'https://app.qamax.co/api';
+const API_BASE_URL = process.env.QUALITYMAX_API_URL || 'https://app.qualitymax.io/api';
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 class QualityMaxClient {
     client;
@@ -30507,7 +30507,7 @@ module.exports = defineConfig({
         started_at: new Date(startTime).toISOString(),
         completed_at: new Date().toISOString(),
         browser: inputs.browser,
-        report_url: `https://app.qamax.co/results/${executionId}`,
+        report_url: `https://app.qualitymax.io/results/${executionId}`,
         tests: testResults,
     };
     return results;
@@ -30554,7 +30554,7 @@ async function run() {
         core.info('Validating API key...');
         const isValid = await client.validateApiKey();
         if (!isValid) {
-            throw new Error('Invalid API key. Get your API key from app.qamax.co/settings/api');
+            throw new Error('Invalid API key. Get your API key from app.qualitymax.io/settings/api');
         }
         core.info('API key validated ✓');
         // Resolve project ID
@@ -30675,7 +30675,7 @@ async function run() {
                 started_at: new Date(startTime).toISOString(),
                 completed_at: new Date().toISOString(),
                 browser: inputs.browser,
-                report_url: `https://app.qamax.co/results/${executionId}`,
+                report_url: `https://app.qualitymax.io/results/${executionId}`,
                 tests: [],
             };
         }

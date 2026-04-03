@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://app.qamax.co/static/img/quality-max-logo.png" alt="QualityMax" width="200" />
+  <img src="https://app.qualitymax.io/static/img/qualitymax-logo-color.png" alt="QualityMax" width="200" />
 </p>
 
 <h1 align="center">QualityMax Test Runner</h1>
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/marketplace/actions/qualitymax-test-runner"><img src="https://img.shields.io/badge/GitHub%20Marketplace-QualityMax-blue?logo=github" alt="GitHub Marketplace" /></a>
+  <a href="https://github.com/marketplace/actions/qualitymax-e2e-tests"><img src="https://img.shields.io/badge/GitHub%20Marketplace-QualityMax-blue?logo=github" alt="GitHub Marketplace" /></a>
   <a href="https://github.com/Quality-Max/qualitymax-github-action/releases"><img src="https://img.shields.io/github/v/release/Quality-Max/qualitymax-github-action?label=version" alt="Version" /></a>
   <a href="https://github.com/Quality-Max/qualitymax-github-action/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Quality-Max/qualitymax-github-action" alt="License" /></a>
 </p>
@@ -85,7 +85,8 @@ If your GitHub repository is linked to a QualityMax project, omit both — the a
 - **PR Comments** — Automatic test result summaries on pull requests
 - **Fast Feedback** — Results in minutes, not hours
 - **Auto-Retry** — Flaky test detection and automatic retries
-- **Artifacts** — Screenshots and videos for failed tests
+- **Seed Mode** — Bootstrap tests via AI discovery directly from CI
+- **Local Execution** — Run tests in the GitHub runner when configured
 
 ## Inputs
 
@@ -102,6 +103,10 @@ If your GitHub repository is linked to a QualityMax project, omit both — the a
 | `timeout-minutes` | Maximum execution time | No | `30` |
 | `fail-on-test-failure` | Fail workflow if tests fail | No | `true` |
 | `post-pr-comment` | Post results as PR comment | No | `true` |
+| `mode` | Action mode: `run` (execute tests) or `seed` (bootstrap tests via AI) | No | `run` |
+| `auto-discover` | Auto-discover test scenarios in seed mode | No | `true` |
+| `max-seed-tests` | Maximum tests to generate in seed mode (1-10) | No | `3` |
+| `seed-descriptions` | Newline-separated test descriptions for seed mode | No | — |
 
 > **Note:** Either `project-id`, `project-name`, or a linked repository is required. If none are provided, the action attempts auto-detection from the repository URL.
 
@@ -117,6 +122,9 @@ If your GitHub repository is linked to a QualityMax project, omit both — the a
 | `duration-seconds` | Total execution time |
 | `report-url` | URL to full test report |
 | `summary-markdown` | Pre-formatted markdown summary |
+| `tests-created` | Tests created (seed mode only) |
+| `tests-skipped` | Tests skipped (seed mode only) |
+| `seed-message` | Summary message (seed mode only) |
 
 ## Permissions
 
@@ -201,6 +209,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+### Bootstrap Tests with Seed Mode
+
+```yaml
+name: Seed Tests
+on: workflow_dispatch
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Quality-Max/qualitymax-github-action@v1
+        with:
+          api-key: ${{ secrets.QUALITYMAX_API_KEY }}
+          project-name: 'My Web App'
+          mode: 'seed'
+          max-seed-tests: '5'
+          base-url: 'https://staging.example.com'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
 ### Run Specific Tests
 
 ```yaml
@@ -233,11 +262,11 @@ Generate a complete workflow file from the QualityMax UI:
 
 ## Getting Your API Key
 
-1. Go to [app.qamax.co](https://app.qamax.co)
-2. Navigate to **Settings** → **API Keys**
+1. Go to [app.qualitymax.io](https://app.qualitymax.io)
+2. Navigate to **Settings** > **API Keys**
 3. Click **Generate API Key**
 4. Copy the key (starts with `qm_`)
-5. Add it as a secret in your repository: **Settings** → **Secrets** → **QUALITYMAX_API_KEY**
+5. Add it as a secret in your repository: **Settings** > **Secrets** > **QUALITYMAX_API_KEY**
 
 ## PR Comment Example
 
@@ -245,18 +274,18 @@ When tests complete, a comment is automatically posted to your PR:
 
 ---
 
-## 🧪 QualityMax Test Results
+## QualityMax Test Results
 
 | Status | Tests | Duration |
 |--------|-------|----------|
-| ✅ Passed | 12/12 | 2m 34s |
+| Passed | 12/12 | 2m 34s |
 
 ### Summary
 - **Browser:** Chromium
 - **Base URL:** https://staging.example.com
 - **Commit:** `abc1234`
 
-[View Full Report](https://app.qamax.co/results/gha_xyz789)
+[View Full Report](https://app.qualitymax.io/results/gha_xyz789)
 
 ---
 
@@ -300,8 +329,8 @@ env:
 
 ## Support
 
-- [Documentation](https://qamax.co)
-- [Email Support](mailto:contact@qamax.co)
+- [Documentation](https://qualitymax.io)
+- [Email Support](mailto:contact@qualitymax.io)
 - [Report Issues](https://github.com/Quality-Max/qualitymax-github-action/issues)
 
 ## License

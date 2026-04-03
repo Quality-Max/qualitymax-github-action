@@ -340,7 +340,7 @@ module.exports = defineConfig({
     started_at: new Date(startTime).toISOString(),
     completed_at: new Date().toISOString(),
     browser: inputs.browser,
-    report_url: `https://app.qamax.co/results/${executionId}`,
+    report_url: `https://app.qualitymax.io/results/${executionId}`,
     tests: testResults,
   };
 
@@ -396,7 +396,7 @@ async function run(): Promise<void> {
     const isValid = await client.validateApiKey();
     if (!isValid) {
       throw new Error(
-        'Invalid API key. Get your API key from app.qamax.co/settings/api'
+        'Invalid API key. Get your API key from app.qualitymax.io/settings/api'
       );
     }
     core.info('API key validated ✓');
@@ -537,7 +537,7 @@ async function run(): Promise<void> {
         started_at: new Date(startTime).toISOString(),
         completed_at: new Date().toISOString(),
         browser: inputs.browser,
-        report_url: `https://app.qamax.co/results/${executionId}`,
+        report_url: `https://app.qualitymax.io/results/${executionId}`,
         tests: [],
       };
     } else {

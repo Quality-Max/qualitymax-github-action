@@ -34,6 +34,10 @@ export declare class QualityMaxClient {
      */
     getResults(executionId: string): Promise<TestExecutionResults>;
     /**
+     * Report bulk execution results back to the API
+     */
+    reportResults(executionId: string, result: 'passed' | 'failed', passedTests: number, failedTests: number, totalTests: number): Promise<void>;
+    /**
      * Cancel execution
      */
     cancelExecution(executionId: string): Promise<void>;
