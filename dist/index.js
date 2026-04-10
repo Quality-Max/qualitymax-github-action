@@ -30434,7 +30434,7 @@ module.exports = defineConfig({
     // Parse results from JSON reporter
     let passedTests = 0;
     let failedTests = 0;
-    let totalTests = scripts.length;
+    const totalTests = scripts.length;
     let skippedTests = 0;
     const testResults = [];
     const resultsFile = path.join(tmpDir, 'results.json');
