@@ -61,6 +61,12 @@ inputs:
   seed-descriptions:
     description: 'Newline-separated test descriptions for seed mode (overrides auto-discover)'
     required: false
+  shard:
+    description: 'Matrix shard index (1-based). Use with shards-total to split tests across parallel jobs. Example: shard=2, shards-total=4 runs the second quarter.'
+    required: false
+  shards-total:
+    description: 'Total number of shards. Required when shard is set. Ignored otherwise.'
+    required: false
 
 outputs:
   execution-id:

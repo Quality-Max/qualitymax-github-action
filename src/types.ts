@@ -138,6 +138,11 @@ export interface ActionInputs {
   autoDiscover: boolean;
   maxSeedTests: number;
   seedDescriptions?: string[];
+  // Matrix sharding: split the test suite across N parallel jobs using
+  // Playwright's native --shard=N/M flag. Set both to enable.
+  // Example: shard=2, shardsTotal=4 runs the second quarter of the suite.
+  shard?: number;
+  shardsTotal?: number;
 }
 
 export interface ActionOutputs {

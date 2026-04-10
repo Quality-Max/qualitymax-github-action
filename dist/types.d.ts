@@ -119,6 +119,8 @@ export interface ActionInputs {
     autoDiscover: boolean;
     maxSeedTests: number;
     seedDescriptions?: string[];
+    shard?: number;
+    shardsTotal?: number;
 }
 export interface ActionOutputs {
     executionId: string;
