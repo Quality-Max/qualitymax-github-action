@@ -28,6 +28,26 @@ function getInputs(): ActionInputs {
   const testIdsInput = core.getInput('test-ids');
   const seedDescInput = core.getInput('seed-descriptions');
 
+  // Parse sharding inputs. Both must be set to activate sharding —
+  // if either is missing or invalid we fall back to running the full suite.
+  const shardInput = core.getInput('shard');
+  const shardsTotalInput = core.getInput('shards-total');
+  let shard: number | undefined;
+  let shardsTotal: number | undefined;
+  if (shardInput && shardsTotalInput) {
+    const s = parseInt(shardInput, 10);
+    const t = parseInt(shardsTotalInput, 10);
+    if (Number.isFinite(s) && Number.isFinite(t) && s >= 1 && t >= 1 && s <= t) {
+      shard = s;
+      shardsTotal = t;
+    } else {
+      core.warning(
+        `Invalid shard config: shard=${shardInput}, shards-total=${shardsTotalInput}. ` +
+          `Both must be positive integers with shard <= shards-total. Running full suite.`
+      );
+    }
+  }
+
   return {
     apiKey: core.getInput('api-key', { required: true }),
     projectId: core.getInput('project-id') || '',
@@ -48,6 +68,8 @@ function getInputs(): ActionInputs {
     seedDescriptions: seedDescInput
       ? seedDescInput.split('\n').map((d) => d.trim()).filter((d) => d)
       : undefined,
+    shard,
+    shardsTotal,
   };
 }
 
@@ -244,12 +266,21 @@ module.exports = defineConfig({
   core.info(`Installing Playwright browser: ${inputs.browser}...`);
   await exec('npx', ['playwright', 'install', inputs.browser], { cwd: tmpDir });
 
-  // Run tests
-  core.info('Running Playwright tests...');
+  // Run tests — pass --shard=N/M when matrix sharding is active so this
+  // runner only executes its slice of the suite. Playwright deterministically
+  // partitions the test files, so all shards agree on the split without
+  // coordinating.
+  const playwrightArgs = ['playwright', 'test', '--config=playwright.config.js'];
+  if (inputs.shard && inputs.shardsTotal) {
+    playwrightArgs.push(`--shard=${inputs.shard}/${inputs.shardsTotal}`);
+    core.info(`Running Playwright tests (shard ${inputs.shard}/${inputs.shardsTotal})...`);
+  } else {
+    core.info('Running Playwright tests...');
+  }
   const startTime = Date.now();
   let exitCode = 0;
   try {
-    exitCode = await exec('npx', ['playwright', 'test', '--config=playwright.config.js'], {
+    exitCode = await exec('npx', playwrightArgs, {
       cwd: tmpDir,
       ignoreReturnCode: true,
     });
@@ -263,7 +294,6 @@ module.exports = defineConfig({
   // Parse results from JSON reporter
   let passedTests = 0;
   let failedTests = 0;
-  const totalTests = scripts.length;
   let skippedTests = 0;
   const testResults: TestExecutionResults['tests'] = [];
 
@@ -298,6 +328,13 @@ module.exports = defineConfig({
     }
   }
 
+  // Compute totalTests from the actual tests run in this shard (when parsed).
+  // When sharding, scripts.length is the full-suite size, not the shard size,
+  // so we prefer testResults.length. Falls back to scripts.length only when
+  // we couldn't parse any results.
+  const isSharded = Boolean(inputs.shard && inputs.shardsTotal);
+  const totalTests = testResults.length > 0 ? testResults.length : scripts.length;
+
   // If no results parsed, infer from exit code
   if (testResults.length === 0) {
     if (exitCode === 0) {
@@ -305,14 +342,18 @@ module.exports = defineConfig({
     } else {
       failedTests = totalTests;
     }
-    for (const script of scripts) {
-      testResults.push({
-        test_id: script.id,
-        test_name: script.name,
-        status: exitCode === 0 ? 'passed' : 'failed',
-        duration_seconds: durationSeconds / scripts.length,
-        error_message: exitCode !== 0 ? 'Test execution failed' : undefined,
-      });
+    // Don't fabricate per-script rows when sharding — we don't know which
+    // scripts actually ran in this shard without Playwright's output.
+    if (!isSharded) {
+      for (const script of scripts) {
+        testResults.push({
+          test_id: script.id,
+          test_name: script.name,
+          status: exitCode === 0 ? 'passed' : 'failed',
+          duration_seconds: durationSeconds / scripts.length,
+          error_message: exitCode !== 0 ? 'Test execution failed' : undefined,
+        });
+      }
     }
   }
 
@@ -390,6 +431,9 @@ async function run(): Promise<void> {
     core.info('🚀 QualityMax Test Runner');
     core.info(`Project: ${inputs.projectId || inputs.projectName || '(auto-detect)'}`);
     core.info(`Test Suite: ${inputs.testSuite}`);
+    if (inputs.shard && inputs.shardsTotal) {
+      core.info(`Shard: ${inputs.shard}/${inputs.shardsTotal}`);
+    }
     core.info(`Browser: ${inputs.browser}`);
 
     // Initialize client

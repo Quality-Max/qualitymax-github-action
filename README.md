@@ -107,6 +107,8 @@ If your GitHub repository is linked to a QualityMax project, omit both — the a
 | `auto-discover` | Auto-discover test scenarios in seed mode | No | `true` |
 | `max-seed-tests` | Maximum tests to generate in seed mode (1-10) | No | `3` |
 | `seed-descriptions` | Newline-separated test descriptions for seed mode | No | — |
+| `shard` | Matrix shard index (1-based), used with `shards-total` for parallel execution | No | — |
+| `shards-total` | Total number of shards. Required when `shard` is set | No | — |
 
 > **Note:** Either `project-id`, `project-name`, or a linked repository is required. If none are provided, the action attempts auto-detection from the repository URL.
 
@@ -240,6 +242,38 @@ jobs:
     test-suite: 'custom'
     test-ids: '1,2,3,4,5'
 ```
+
+### Matrix Sharding — Parallel Execution
+
+For large test suites, split the run across multiple parallel GitHub runners using Playwright's native `--shard=N/M` flag. Each shard runs a deterministic slice of the tests, cutting wall-clock time nearly linearly with the shard count.
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]   # 4 parallel runners
+    steps:
+      - uses: Quality-Max/qualitymax-github-action@v1
+        with:
+          api-key: ${{ secrets.QUALITYMAX_API_KEY }}
+          project-name: 'My Web App'
+          shard: ${{ matrix.shard }}
+          shards-total: 4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+Each shard:
+- Fetches the full set of scripts from QualityMax
+- Runs only its slice via `npx playwright test --shard=N/M`
+- Reports its own pass/fail back to QualityMax as a separate execution
+
+**When to use it:** test suites of 20+ scripts that take more than a few minutes sequentially. For small suites (< 20 tests) the shard overhead (npm install + browser install per runner) outweighs the savings.
+
+**Tip:** set `fail-fast: false` so a failure in one shard doesn't cancel the others — you want to see every failure on a given commit, not just the first.
 
 ### Continue on Test Failure
 
