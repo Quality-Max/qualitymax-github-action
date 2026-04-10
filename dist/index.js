@@ -30403,15 +30403,19 @@ module.exports = defineConfig({
         core.info(`  Wrote ${safeFileName}: ${script.name}`);
     }
     // Install Playwright
-    core.info('Installing Playwright...');
+    // Pin version to avoid surprises from `latest` and skip --with-deps
+    // (Ubuntu 24.04 GitHub runners already have all required system libraries,
+    // and --with-deps invokes apt-get which can hang waiting for sudo).
+    core.info('Installing @playwright/test...');
     const packageJson = JSON.stringify({
         dependencies: {
-            '@playwright/test': 'latest',
+            '@playwright/test': '1.49.0',
         },
     });
     fs.writeFileSync(path.join(tmpDir, 'package.json'), packageJson);
-    await (0, exec_1.exec)('npm', ['install', '--no-audit', '--no-fund'], { cwd: tmpDir, silent: true });
-    await (0, exec_1.exec)('npx', ['playwright', 'install', '--with-deps', inputs.browser], { cwd: tmpDir, silent: true });
+    await (0, exec_1.exec)('npm', ['install', '--no-audit', '--no-fund'], { cwd: tmpDir });
+    core.info(`Installing Playwright browser: ${inputs.browser}...`);
+    await (0, exec_1.exec)('npx', ['playwright', 'install', inputs.browser], { cwd: tmpDir });
     // Run tests
     core.info('Running Playwright tests...');
     const startTime = Date.now();
