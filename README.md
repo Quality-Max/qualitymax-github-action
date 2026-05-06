@@ -12,6 +12,7 @@
   <a href="https://github.com/marketplace/actions/qualitymax-e2e-tests"><img src="https://img.shields.io/badge/GitHub%20Marketplace-QualityMax-blue?logo=github" alt="GitHub Marketplace" /></a>
   <a href="https://github.com/Quality-Max/qualitymax-github-action/releases"><img src="https://img.shields.io/github/v/release/Quality-Max/qualitymax-github-action?label=version" alt="Version" /></a>
   <a href="https://github.com/Quality-Max/qualitymax-github-action/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Quality-Max/qualitymax-github-action" alt="License" /></a>
+  <a href="https://buymeacoffee.com/qualitymax"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?logo=buymeacoffee" alt="Buy Me a Coffee"></a>
 </p>
 
 ---
