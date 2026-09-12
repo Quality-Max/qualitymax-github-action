@@ -4,6 +4,10 @@
 
 <h1 align="center">QualityMax Test Runner</h1>
 
+[Documentation](https://docs.qualitymax.io/) · [Code review gates](https://docs.qualitymax.io/code-review-gates/) · [Demo playground](https://github.com/Quality-Max/qualitymax-demo-playground)
+
+This Action runs in an explicitly configured GitHub Actions workflow. The QualityMax GitHub App and its PR gates are a separate integration; required-check enforcement depends on repository configuration.
+
 <p align="center">
   <strong>AI-powered E2E testing for your CI/CD pipeline</strong>
 </p>
