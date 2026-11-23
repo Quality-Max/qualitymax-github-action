@@ -13,7 +13,7 @@ This Action runs in an explicitly configured GitHub Actions workflow. The Qualit
 </p>
 
 <p align="center">
-  <a href="https://github.com/marketplace/actions/qualitymax-e2e-tests"><img src="https://img.shields.io/badge/GitHub%20Marketplace-QualityMax-blue?logo=github" alt="GitHub Marketplace" /></a>
+  <a href="https://github.com/marketplace/actions/qualitymax-test-runner"><img src="https://img.shields.io/badge/GitHub%20Marketplace-QualityMax-blue?logo=github" alt="GitHub Marketplace" /></a>
   <a href="https://github.com/Quality-Max/qualitymax-github-action/releases"><img src="https://img.shields.io/github/v/release/Quality-Max/qualitymax-github-action?label=version" alt="Version" /></a>
   <a href="https://github.com/Quality-Max/qualitymax-github-action/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Quality-Max/qualitymax-github-action" alt="License" /></a>
   <a href="https://buymeacoffee.com/qualitymax"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?logo=buymeacoffee" alt="Buy Me a Coffee"></a>
@@ -45,6 +45,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+### See the Action in CI
+
+The Demo Playground shows how to run QualityMax tests against a sample TodoMVC app.
+See the [example workflow](https://github.com/Quality-Max/qualitymax-demo-playground/blob/c25308843dc9089db5fb6a4f27942daa07c9b02e/.github/workflows/qualitymax.yml)
+and its [successful two-shard run from April 2026](https://github.com/Quality-Max/qualitymax-demo-playground/actions/runs/24265016404).
 
 ## Three Ways to Identify Your Project
 
